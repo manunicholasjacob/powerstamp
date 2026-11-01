@@ -19,9 +19,9 @@ measurement.
 from __future__ import annotations
 
 import os
-from typing import Dict, List, Optional, Sequence
+from typing import List, Optional, Sequence
 
-from .base import REDUCTION_SAMPLER, Availability, Backend, Reduction, Sample, integrate_power
+from .base import REDUCTION_SAMPLER, Availability, Backend, Reduction, Sample
 
 
 class UnsupportedBackend(Backend):

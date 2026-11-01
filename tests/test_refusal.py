@@ -13,7 +13,7 @@ import pytest
 
 from conftest import FakeConstantPowerBackend
 from powerstamp import MARGINAL_SAMPLES, MIN_SAMPLES, Powerstamp
-from powerstamp.backends.base import Availability, Sample
+from powerstamp.backends.base import Availability
 from powerstamp.measure import _build_result
 from powerstamp.uncertainty import (
     JITTER_RSD_WARN,

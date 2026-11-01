@@ -33,7 +33,7 @@ from __future__ import annotations
 import os
 import shutil
 import subprocess
-from typing import Callable, Dict, List, Optional, Sequence
+from typing import Callable, List, Optional, Sequence
 
 from .base import REDUCTION_COUNTER, Availability, Backend, Reduction, Sample
 

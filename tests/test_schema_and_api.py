@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from conftest import FakeConstantPowerBackend, NeverAvailableBackend
+from conftest import FakeConstantPowerBackend
 from powerstamp import (
     EnergyResult,
     Powerstamp,

@@ -178,7 +178,6 @@ def test_ambiguous_rollover_is_invalidating_through_the_backend(small_range_tree
 def test_ambiguous_rollover_makes_the_whole_result_invalid(small_range_tree):
     """An ambiguous rollover must reach the envelope as verdict INVALID."""
     from powerstamp.measure import _build_result
-    from powerstamp.backends.base import Availability
 
     reader = ScriptedReader(
         scripts={_energy_path(small_range_tree, 0): [0, 0, 900_000]}

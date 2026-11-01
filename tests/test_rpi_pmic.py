@@ -122,7 +122,6 @@ def test_reads_per_sample_is_the_channel_count_not_the_rail_count(pmic_capture):
 
 
 def test_the_engine_reports_sweep_rate_and_channel_read_rate_separately(pmic_capture):
-    from powerstamp.backends.base import Availability
     from powerstamp.measure import _build_result
 
     backend = RpiPmicBackend(runner=PmicRunner(pmic_capture))

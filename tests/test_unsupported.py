@@ -8,8 +8,6 @@ itself says ESTIMATE and the verdict can never be PASS.
 
 from __future__ import annotations
 
-import pytest
-
 from conftest import NeverAvailableBackend
 from powerstamp import Powerstamp
 from powerstamp.backends import select_backend
