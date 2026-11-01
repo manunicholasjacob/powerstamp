@@ -347,3 +347,38 @@ def test_a_passing_result_carries_a_nonzero_expanded_uncertainty():
     block = result.to_dict()["measurement"]["uncertainty"]
     assert block["coverage_factor"] == 2.0
     assert block["relative_expanded"] > 0
+
+def test_sampler_thread_does_not_shadow_any_threading_attribute():
+    """A Thread subclass must not assign over Thread's own attributes.
+
+    `self._stop = threading.Event()` shadowed `Thread._stop`, which the interpreter
+    calls during `join()`, so every join raised
+    `TypeError: 'Event' object is not callable` on Python 3.9 through 3.13. It passed
+    locally only because CPython 3.14 reworked those internals. This pins the whole
+    class of mistake rather than the one instance.
+
+    Caveat worth knowing: on 3.14 `Thread._stop` no longer exists, so neither half of
+    this guard fires there. It is effective on 3.9 through 3.13, which the CI matrix
+    covers. A green local run on 3.14 does not prove this class of bug is absent.
+    """
+    import threading
+
+    from powerstamp.measure import _SamplerThread
+
+    backend = FakeConstantPowerBackend(watts=1.0, rails=1)
+    thread = _SamplerThread(backend, 0.01)
+
+    # Only the attributes THIS subclass adds matter. Thread.__init__ legitimately sets
+    # some of its own (_initialized and friends), so compare against a bare Thread.
+    base = threading.Thread()
+    ours = set(vars(thread)) - set(vars(base))
+    collisions = sorted(name for name in ours if hasattr(threading.Thread, name))
+    assert not collisions, (
+        "these instance attributes shadow threading.Thread members: %s" % collisions
+    )
+
+    # And the thing the shadowing actually broke: start, stop, join must work.
+    thread.start()
+    thread.stop()
+    thread.join(timeout=2.0)
+    assert not thread.is_alive()

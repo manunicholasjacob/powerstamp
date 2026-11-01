@@ -208,13 +208,13 @@ class _SamplerThread(threading.Thread):
         super().__init__(daemon=True, name="powerstamp-sampler")
         self._backend = backend
         self._interval = interval_s
-        self._stop = threading.Event()
+        self._stop_event = threading.Event()
         self.samples: List[Sample] = []
         self.errors: List[str] = []
 
     def run(self) -> None:
         next_due = time.monotonic()
-        while not self._stop.is_set():
+        while not self._stop_event.is_set():
             try:
                 sample = self._backend.read()
             except Exception as exc:  # a read failure is recorded, not fatal
@@ -226,14 +226,14 @@ class _SamplerThread(threading.Thread):
             next_due += self._interval
             wait = next_due - time.monotonic()
             if wait > 0:
-                self._stop.wait(wait)
+                self._stop_event.wait(wait)
             else:
                 # Fell behind. Resynchronise rather than burn a backlog, and
                 # let the achieved rate show the shortfall.
                 next_due = time.monotonic()
 
     def stop(self) -> None:
-        self._stop.set()
+        self._stop_event.set()
 
 
 def _measure_region(
