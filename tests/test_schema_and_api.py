@@ -8,7 +8,7 @@ import sys
 
 import pytest
 
-from conftest import FakeConstantPowerBackend
+from conftest import FakeSteppedPowerBackend, FakeConstantPowerBackend
 from powerstamp import (
     EnergyResult,
     Powerstamp,
@@ -316,9 +316,17 @@ def test_a_provided_baseline_is_subtracted_and_recorded():
 
 
 def test_a_measured_baseline_is_recorded_as_measured():
+    """The baseline must be measured first, then subtracted from the region.
+
+    This used a constant-power backend, so the measured baseline came out equal
+    to the load and the engine correctly refused to subtract it. The assertion
+    that subtraction had happened then passed or failed on floating point luck:
+    green on one machine, red on all fifteen CI legs. A stepped backend is the
+    only shape in which a measured baseline means anything.
+    """
     import time
 
-    backend = FakeConstantPowerBackend(watts=10.0)
+    backend = FakeSteppedPowerBackend(idle_w=2.0, load_w=10.0, step_after_s=0.4)
     with Powerstamp(
         sample_hz=200, candidates=[backend], baseline_s=0.4, label="measured-base"
     ) as ps:
@@ -326,11 +334,34 @@ def test_a_measured_baseline_is_recorded_as_measured():
     result = ps.result
     assert result is not None
     assert result.baseline_subtracted is True
-    assert result.baseline_w == pytest.approx(10.0, rel=0.3)
+    assert result.baseline_w == pytest.approx(2.0, rel=0.5)
     assert "measured over" in result.baseline_source
-    # Subtracting a baseline equal to the load leaves roughly nothing, which
-    # is correct for this fixture.
-    assert result.joules is not None
+    assert "BASELINE_SUBTRACTED" in result.reason_codes()
+    # About 10 W for a second, less a 2 W baseline, so roughly 8 J.
+    assert result.joules == pytest.approx(8.0, rel=0.35)
+    assert result.joules_before_baseline > result.joules
+
+
+def test_a_baseline_equal_to_the_load_is_refused_not_silently_zeroed():
+    """A baseline that would leave nothing must be refused, not zeroed.
+
+    The baseline is PROVIDED rather than measured, so the equality is exact. A
+    measured baseline from a constant-power backend lands a hair above or below
+    the load depending on sampling, which is precisely the non-determinism that
+    made the old version of the test above pass here and fail on every CI leg.
+    """
+    import time
+
+    backend = FakeConstantPowerBackend(watts=10.0)
+    with Powerstamp(
+        sample_hz=200, candidates=[backend], baseline_w=10.0, label="equal-base"
+    ) as ps:
+        time.sleep(1.0)
+    result = ps.result
+    assert result is not None
+    assert result.baseline_subtracted is False
+    assert "BASELINE_EXCEEDS_MEASUREMENT" in result.reason_codes()
+    assert result.joules == result.joules_before_baseline
 
 
 def test_a_baseline_larger_than_the_measurement_is_invalidating():

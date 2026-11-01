@@ -344,6 +344,41 @@ class FakeConstantPowerBackend(Backend):
         )
 
 
+class FakeSteppedPowerBackend(FakeConstantPowerBackend):
+    """Low power for the first `step_after_s`, then higher.
+
+    A constant-power backend cannot express a meaningful baseline: the idle
+    window and the measured region report the same watts, so the net figure is
+    zero and the engine correctly refuses to subtract. This one steps up after
+    the baseline window, which is the only shape in which baseline subtraction
+    means anything.
+    """
+
+    name = "fake_stepped"
+
+    def __init__(
+        self,
+        idle_w: float = 2.0,
+        load_w: float = 10.0,
+        step_after_s: float = 0.4,
+        rails: int = 2,
+    ) -> None:
+        super().__init__(watts=idle_w, rails=rails)
+        self.idle_w = idle_w
+        self.load_w = load_w
+        self.step_after_s = step_after_s
+        self._t0 = None
+
+    def read(self) -> Sample:
+        import time
+
+        if self._t0 is None:
+            self._t0 = time.monotonic()
+        elapsed = time.monotonic() - self._t0
+        self.watts = self.load_w if elapsed >= self.step_after_s else self.idle_w
+        return super().read()
+
+
 class NeverAvailableBackend(Backend):
     name = "never_available"
     reduction_kind = "sampler"
