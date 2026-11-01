@@ -33,7 +33,7 @@ jobs:
           - os: ubuntu-24.04
             python-version: '3.9'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v5
         with:
@@ -101,7 +101,7 @@ jobs:
     name: ascii only
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - name: Every tracked file must be pure ASCII
         run: |
           if LC_ALL=C grep -rn '[^ -~]' --exclude-dir=.git . ; then
@@ -114,7 +114,7 @@ jobs:
     name: rapl detection on linux
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -133,7 +133,7 @@ jobs:
     name: build the distribution
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
@@ -149,7 +149,7 @@ jobs:
     name: the action runs on itself
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       - uses: actions/setup-python@v5
         with:
           python-version: '3.12'
