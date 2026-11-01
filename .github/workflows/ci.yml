@@ -50,7 +50,12 @@ jobs:
         run: |
           # detect exits 2 when no backend is available, which is the normal
           # case on a GitHub hosted runner. Both 0 and 2 are acceptable.
-          python -m powerstamp.cli detect; rc=$?
+          # `cmd; rc=$?` is unsafe under `bash -e`: the shell exits at the
+          # failing command before the exit code is ever examined, so the
+          # tolerance below never applied. `|| rc=$?` is part of an OR list,
+          # which -e does not abort on.
+          rc=0
+          python -m powerstamp.cli detect || rc=$?
           if [ "$rc" != "0" ] && [ "$rc" != "2" ]; then
             echo "unexpected exit $rc from powerstamp detect"
             exit 1
