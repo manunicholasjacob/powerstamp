@@ -1,0 +1,40 @@
+name: Bug report
+description: Something behaved differently from what the documentation says
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report this. The fields below are what make a report
+        diagnosable without a round trip of questions.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What you did, what you saw, and what you expected instead.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: The tool's own output
+      description: |
+        The output of `powerstamp detect`, which lists every backend and why it was or
+        was not available, plus the full envelope from the run if you got one.
+      render: shell
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Output of `powerstamp --version`, or the commit you tested.
+    validations:
+      required: true
+  - type: input
+    id: platform
+    attributes:
+      label: Platform
+      description: Operating system, kernel version, and whether this was inside a container or a CI runner.
+    validations:
+      required: true

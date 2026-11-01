@@ -146,3 +146,21 @@ repositories to name them.
 - [ ] If the tool is used to produce a number in a submission, state the
       achieved sampling rate, the rails covered and the expanded uncertainty in
       the paper, since that is the entire argument for the tool existing.
+
+## PyPI publishing: no token needed
+
+`.github/workflows/publish.yml` uses PyPI Trusted Publishing over OIDC, so there is no API
+token to create, paste or rotate, and none is stored in this repository.
+
+One-time setup, which only you can do:
+
+1. On https://pypi.org, go to **Your projects -> Publishing -> Add a new pending publisher**
+   and enter owner `manunicholasjacob`, repository `powerstamp`, workflow name `publish.yml`,
+   environment name `pypi`.
+2. In this repository, **Settings -> Environments -> New environment**, named `pypi`.
+3. Push a tag beginning with `v`. The workflow builds, runs `twine check --strict`, refuses to
+   continue if the tag and the packaged version disagree, and then uploads.
+
+Do a dry run against TestPyPI first if you want one: add a second pending publisher on
+https://test.pypi.org and temporarily point the `pypa/gh-action-pypi-publish` step at it with
+`with: repository-url: https://test.pypi.org/legacy/`.
