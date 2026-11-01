@@ -65,7 +65,7 @@ two of these before telling anyone the tool works.
 
 ## 2. Local checks
 
-- [ ] `python -m pytest -v` passes. It was 133 passed on Windows with Python
+- [ ] `python -m pytest -v` passes. It was 135 passed on Windows with Python
       3.14.6 when this was written.
 - [ ] `LC_ALL=C grep -rn '[^ -~]' --exclude-dir=.git .` prints nothing.
 - [ ] No em dashes anywhere: `grep -rn -- '--' .` for a visual check of the

@@ -62,7 +62,7 @@ left.
   mapped exit codes.
 - A composite GitHub Action at the repository root with nine outputs and a job
   summary table.
-- 133 tests against synthetic fixtures: a fake powercap tree with an injectable
+- 135 tests against synthetic fixtures: a fake powercap tree with an injectable
   counter reader, a fake NVML module, a recorded `vcgencmd pmic_read_adc`
   capture, and a fake power supply sysfs tree.
 

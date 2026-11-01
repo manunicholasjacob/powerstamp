@@ -499,7 +499,7 @@ pip install -e ".[test]"
 python -m pytest -v
 ```
 
-133 tests, all passing on Windows with Python 3.14. They cover counter rollover
+135 tests, all passing on Windows with Python 3.14. They cover counter rollover
 including a rollover mid measurement and a rollover that cannot be
 disambiguated, partial domain availability with the unreadable domains reported
 as absent rather than zero, the root-only `energy_uj` path, runs too short for
