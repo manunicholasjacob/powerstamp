@@ -1,0 +1,145 @@
+{
+  "schema": "measurement-provenance/1",
+  "tool": {
+    "name": "powerstamp",
+    "version": "0.1.0"
+  },
+  "taken_at_utc": "2026-11-01T00:00:00.000000Z",
+  "duration_s": 2.9716981132075473,
+  "platform": {
+    "system": "Windows",
+    "release": "11",
+    "machine": "AMD64",
+    "python": "3.14.6"
+  },
+  "verdict": "PASS",
+  "reasons": [
+    {
+      "code": "ENERGY_FROM_POWER_INTEGRAL",
+      "severity": "info",
+      "detail": "Energy is the trapezoidal integral of per rail voltage times current from pmic_read_adc. The PMIC exposes no energy counter."
+    },
+    {
+      "code": "PMIC_EXCLUDES_EXTERNAL_5V",
+      "severity": "warning",
+      "detail": "Raspberry Pi documents that these readings exclude USB current and anything else connected directly to the 5V supply, so this is a board rail figure and not a wall figure."
+    },
+    {
+      "code": "PMIC_VOLTAGE_ONLY_CHANNELS",
+      "severity": "info",
+      "detail": "Channel(s) BATT, EXT5V report voltage with no matching current channel and contribute no power term. They are counted in the channel read rate and excluded from the rail power sum."
+    },
+    {
+      "code": "BASELINE_NOT_SUBTRACTED",
+      "severity": "info",
+      "detail": "No idle baseline was subtracted, so the figure includes the machine's idle draw over the measured region."
+    },
+    {
+      "code": "SAMPLE_COUNT_MARGINAL",
+      "severity": "warning",
+      "detail": "64 complete sample(s) clears the minimum of 30 but stays under 100, so the standard deviation behind the Type A term is itself uncertain by about 8.9 percent."
+    }
+  ],
+  "unreadable": [
+    "pmic:BATT (voltage only, no current channel)",
+    "pmic:EXT5V (voltage only, no current channel)"
+  ],
+  "measurement": {
+    "kind": "MEASUREMENT",
+    "is_measurement": true,
+    "backend": "rpi_pmic",
+    "backend_detail": "12 rail(s) with power, 26 channel read(s) per sweep",
+    "backend_coverage": "Raspberry Pi 5 PMIC supply rails that expose both a current and a voltage channel. Excludes USB current and anything else drawing directly on the 5V supply, and excludes power supply conversion loss.",
+    "reduction": "sampler",
+    "joules": 5.641633431083777,
+    "watts_mean": 1.8984544244281916,
+    "rate": {
+      "requested_hz": 25.0,
+      "achieved_hz": 21.2,
+      "sample_count": 64,
+      "interval_count": 63,
+      "span_s": 2.9716981132075473,
+      "mean_interval_s": 0.04716981132075472,
+      "stdev_interval_s": 1.2094522959374237e-16,
+      "min_interval_s": 0.04716981132075437,
+      "max_interval_s": 0.04716981132075482,
+      "jitter_relative_stdev": 2.564038867387338e-15
+    },
+    "channel_read_hz": 551.1999999999999,
+    "mean_reads_per_sample": 26.0,
+    "closing_interval_s": null,
+    "uncertainty": {
+      "standard_uncertainty_j": 0.03655852704228143,
+      "expanded_uncertainty_j": 0.07311705408456286,
+      "coverage_factor": 2.0,
+      "relative_expanded": 0.012960263189328984,
+      "components_j": {
+        "type_a_sample_scatter": 0.0,
+        "type_b_region_boundary_timing": 0.03655852704228143,
+        "type_b_counter_quantization": 0.0
+      },
+      "excludes": [
+        "absolute accuracy of the counter or ADC, which the vendors do not publish",
+        "contamination from load outside the measured region",
+        "attribution of a battery side reading to the measured region"
+      ],
+      "notes": [
+        "The region boundary term dominates, so the figure is limited by the achieved sampling rate rather than by workload variability.",
+        "The PMIC ADC resolution is not published, so the quantization term is reported as zero rather than inferred from the printed decimal places. The uncertainty budget is therefore missing this term."
+      ]
+    },
+    "refusal_rule": {
+      "min_samples": 30,
+      "marginal_samples": 100,
+      "min_duration_s_at_achieved_rate": 1.4150943396226416,
+      "relative_se_of_stdev": 0.0890870806374748,
+      "rate_shortfall_fraction": 0.8
+    },
+    "per_domain_j": {
+      "1V8_SYS": 0.9181386334937542,
+      "DDR_VDD2": 0.06717229826119386,
+      "3V7_WL_SW": 0.5265601280161811,
+      "VDD_CORE": 1.9898043158057503,
+      "1V1_SYS": 0.6217806900250185,
+      "3V3_SYS": 0.4614294242628001,
+      "0V8_AON": 0.013892380882641525,
+      "3V3_DAC": 0.005403782694905665,
+      "DDR_VDDQ": 0.0,
+      "0V8_SW": 0.7847488953664307,
+      "3V3_ADC": 0.0018012608983018854,
+      "HDMI": 0.25090162137679245
+    },
+    "baseline": {
+      "subtracted": false,
+      "baseline_w": null,
+      "source": "none",
+      "joules_before_baseline": 5.641633431083777
+    },
+    "backends_rejected": [],
+    "label": "replay of the recorded Pi 5 PMIC capture",
+    "rails_with_power": [
+      "0V8_AON",
+      "0V8_SW",
+      "1V1_SYS",
+      "1V8_SYS",
+      "3V3_ADC",
+      "3V3_DAC",
+      "3V3_SYS",
+      "3V7_WL_SW",
+      "DDR_VDD2",
+      "DDR_VDDQ",
+      "HDMI",
+      "VDD_CORE"
+    ],
+    "rail_count": 12,
+    "voltage_only_channels": [
+      "BATT",
+      "EXT5V"
+    ],
+    "current_only_channels": [],
+    "channel_reads_per_sample": 26.0,
+    "coverage_note": "Raspberry Pi 5 PMIC supply rails that expose both a current and a voltage channel. Excludes USB current and anything else drawing directly on the 5V supply, and excludes power supply conversion loss.",
+    "quantization_note": "The PMIC ADC resolution is not published, so the quantization term is reported as zero rather than inferred from the printed decimal places. The uncertainty budget is therefore missing this term.",
+    "rate_note": "achieved_hz counts complete sweeps. channel_read_hz counts individual ADC channel reads and is the larger of the two. A rate derived from the channel read count is an artefact, not a rate."
+  }
+}

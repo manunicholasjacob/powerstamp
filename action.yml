@@ -1,0 +1,197 @@
+name: 'powerstamp'
+description: 'Measure the energy of a command and report it with its achieved sampling rate, rail coverage and uncertainty.'
+author: 'Manu Nicholas Jacob'
+
+branding:
+  icon: 'activity'
+  color: 'green'
+
+inputs:
+  run:
+    description: 'The command to measure. Run through the shell, so a pipeline or a multi-word command works.'
+    required: true
+  sample-hz:
+    description: 'Requested sampling rate. The achieved rate is what gets reported.'
+    required: false
+    default: '20'
+  backend:
+    description: 'Force a backend by name: rapl, nvml, rpi_pmic or android_fuel_gauge. Leave empty to detect.'
+    required: false
+    default: ''
+  baseline-seconds:
+    description: 'Measure idle power for this many seconds before the run and subtract it. Leave empty for no baseline.'
+    required: false
+    default: ''
+  baseline-watts:
+    description: 'Subtract this idle power instead of measuring one. Mutually exclusive with baseline-seconds.'
+    required: false
+    default: ''
+  label:
+    description: 'Label recorded in the output record.'
+    required: false
+    default: ''
+  output:
+    description: 'Path for the JSON envelope.'
+    required: false
+    default: 'powerstamp.json'
+  allow-estimate:
+    description: 'Fall back to a figure labelled ESTIMATE when no backend exists. An ESTIMATE never earns a PASS verdict. Off by default.'
+    required: false
+    default: 'false'
+  fail-on:
+    description: >-
+      Which verdicts fail the step. A comma separated list drawn from INVALID, UNSUPPORTED and UNKNOWN,
+      or the word none. The default fails on INVALID only, because a GitHub hosted runner has no
+      readable energy counter and would otherwise always fail on UNSUPPORTED.
+    required: false
+    default: 'INVALID'
+  python-version:
+    description: 'Python version to set up. Leave empty to use whatever python3 is already on PATH.'
+    required: false
+    default: ''
+
+outputs:
+  joules:
+    description: 'Energy in joules, or empty when the verdict is UNSUPPORTED.'
+    value: ${{ steps.powerstamp.outputs.joules }}
+  watts-mean:
+    description: 'Mean power in watts over the measured region.'
+    value: ${{ steps.powerstamp.outputs.watts-mean }}
+  achieved-hz:
+    description: 'The sampling rate actually achieved, not the one requested.'
+    value: ${{ steps.powerstamp.outputs.achieved-hz }}
+  sample-count:
+    description: 'Number of complete samples the loop delivered.'
+    value: ${{ steps.powerstamp.outputs.sample-count }}
+  expanded-uncertainty-j:
+    description: 'Expanded uncertainty in joules at a coverage factor of 2.'
+    value: ${{ steps.powerstamp.outputs.expanded-uncertainty-j }}
+  verdict:
+    description: 'PASS, INVALID, UNSUPPORTED or UNKNOWN.'
+    value: ${{ steps.powerstamp.outputs.verdict }}
+  kind:
+    description: 'MEASUREMENT, ESTIMATE or NONE. The measurement-versus-estimate flag.'
+    value: ${{ steps.powerstamp.outputs.kind }}
+  backend:
+    description: 'Which backend produced the figure.'
+    value: ${{ steps.powerstamp.outputs.backend }}
+  json-path:
+    description: 'Path to the written JSON envelope.'
+    value: ${{ steps.powerstamp.outputs.json-path }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Set up Python
+      if: inputs.python-version != ''
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python-version }}
+
+    - name: Install powerstamp
+      shell: bash
+      run: python3 -m pip install --disable-pip-version-check --quiet "${{ github.action_path }}"
+
+    - name: Measure
+      id: powerstamp
+      shell: bash
+      env:
+        PS_RUN: ${{ inputs.run }}
+        PS_SAMPLE_HZ: ${{ inputs.sample-hz }}
+        PS_BACKEND: ${{ inputs.backend }}
+        PS_BASELINE_SECONDS: ${{ inputs.baseline-seconds }}
+        PS_BASELINE_WATTS: ${{ inputs.baseline-watts }}
+        PS_LABEL: ${{ inputs.label }}
+        PS_OUTPUT: ${{ inputs.output }}
+        PS_ALLOW_ESTIMATE: ${{ inputs.allow-estimate }}
+        PS_FAIL_ON: ${{ inputs.fail-on }}
+      run: |
+        set -u
+        args=(run --sample-hz "$PS_SAMPLE_HZ" --output "$PS_OUTPUT" --allow-invalid)
+        if [ -n "$PS_BACKEND" ]; then args+=(--backend "$PS_BACKEND"); fi
+        if [ -n "$PS_BASELINE_SECONDS" ]; then args+=(--baseline-seconds "$PS_BASELINE_SECONDS"); fi
+        if [ -n "$PS_BASELINE_WATTS" ]; then args+=(--baseline-watts "$PS_BASELINE_WATTS"); fi
+        if [ -n "$PS_LABEL" ]; then args+=(--label "$PS_LABEL"); fi
+        if [ "$PS_ALLOW_ESTIMATE" = "true" ]; then args+=(--allow-estimate); fi
+
+        # --allow-invalid keeps the CLI from exiting non-zero here. The
+        # fail-on input below decides what fails the step, and the verdict in
+        # the JSON is never altered either way.
+        python3 -m powerstamp.cli "${args[@]}" -- bash -c "$PS_RUN" || true
+
+        python3 - "$PS_OUTPUT" <<'PYEOF'
+        import json
+        import os
+        import sys
+
+        path = sys.argv[1]
+        with open(path) as fh:
+            doc = json.load(fh)
+
+        block = doc.get("measurement") or {}
+        rate = block.get("rate") or {}
+        unc = block.get("uncertainty") or {}
+
+
+        def emit(key, value):
+            with open(os.environ["GITHUB_OUTPUT"], "a") as out:
+                out.write("%s=%s\n" % (key, "" if value is None else value))
+
+
+        emit("joules", block.get("joules"))
+        emit("watts-mean", block.get("watts_mean"))
+        emit("achieved-hz", rate.get("achieved_hz"))
+        emit("sample-count", rate.get("sample_count"))
+        emit("expanded-uncertainty-j", unc.get("expanded_uncertainty_j"))
+        emit("verdict", doc.get("verdict"))
+        emit("kind", block.get("kind"))
+        emit("backend", block.get("backend"))
+        emit("json-path", path)
+
+        summary = os.environ.get("GITHUB_STEP_SUMMARY")
+        if summary:
+            joules = block.get("joules")
+            lines = [
+                "### powerstamp",
+                "",
+                "| field | value |",
+                "| --- | --- |",
+                "| verdict | `%s` |" % doc.get("verdict"),
+                "| kind | `%s` |" % block.get("kind"),
+                "| backend | `%s` |" % block.get("backend"),
+                "| joules | %s |" % ("not measured" if joules is None else joules),
+                "| mean watts | %s |" % block.get("watts_mean"),
+                "| achieved sampling rate (Hz) | %s |" % rate.get("achieved_hz"),
+                "| requested sampling rate (Hz) | %s |" % rate.get("requested_hz"),
+                "| samples | %s |" % rate.get("sample_count"),
+                "| expanded uncertainty (J, k=2) | %s |"
+                % unc.get("expanded_uncertainty_j"),
+                "",
+            ]
+            reasons = doc.get("reasons") or []
+            if reasons:
+                lines += ["#### reasons", ""]
+                for r in reasons:
+                    lines.append("- `%s` (%s): %s" % (r["code"], r["severity"], r["detail"]))
+                lines.append("")
+            unreadable = doc.get("unreadable") or []
+            if unreadable:
+                lines += ["#### not readable (absent, not zero)", ""]
+                for item in unreadable:
+                    lines.append("- %s" % item)
+                lines.append("")
+            with open(summary, "a") as out:
+                out.write("\n".join(lines))
+
+        verdict = doc.get("verdict")
+        raw = os.environ.get("PS_FAIL_ON", "INVALID").strip()
+        if raw.lower() == "none":
+            fail_on = set()
+        else:
+            fail_on = {v.strip().upper() for v in raw.split(",") if v.strip()}
+
+        print("powerstamp verdict: %s" % verdict)
+        if verdict in fail_on:
+            print("::error::powerstamp verdict %s is in fail-on (%s)" % (verdict, raw))
+            raise SystemExit(1)
+        PYEOF

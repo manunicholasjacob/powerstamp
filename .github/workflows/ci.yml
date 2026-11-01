@@ -1,0 +1,165 @@
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: test ${{ matrix.os }} python ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, windows-latest, macos-latest]
+        python-version: ['3.9', '3.10', '3.11', '3.12', '3.13']
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install
+        run: python -m pip install --upgrade pip && python -m pip install -e ".[test]"
+
+      - name: Test
+        run: python -m pytest -v
+
+      - name: CLI smoke test
+        shell: bash
+        run: |
+          # detect exits 2 when no backend is available, which is the normal
+          # case on a GitHub hosted runner. Both 0 and 2 are acceptable.
+          python -m powerstamp.cli detect; rc=$?
+          if [ "$rc" != "0" ] && [ "$rc" != "2" ]; then
+            echo "unexpected exit $rc from powerstamp detect"
+            exit 1
+          fi
+          python -m powerstamp.cli schema --json > /dev/null
+          python -m powerstamp.cli reasons > /dev/null
+          python -m powerstamp.cli --version
+
+      - name: Measure a command and check the envelope
+        shell: bash
+        run: |
+          python -m powerstamp.cli run --sample-hz 20 --output result.json --quiet \
+            --allow-invalid -- python -c "import time; time.sleep(1)" || true
+          python - <<'PYEOF'
+          import json
+
+          with open("result.json") as fh:
+              doc = json.load(fh)
+
+          expected = [
+              "schema",
+              "tool",
+              "taken_at_utc",
+              "duration_s",
+              "platform",
+              "verdict",
+              "reasons",
+              "unreadable",
+              "measurement",
+          ]
+          assert list(doc) == expected, list(doc)
+          assert doc["schema"] == "measurement-provenance/1"
+          assert doc["verdict"] in ("PASS", "INVALID", "UNSUPPORTED", "UNKNOWN")
+          assert doc["measurement"]["kind"] in ("MEASUREMENT", "ESTIMATE", "NONE")
+          # An estimate must never be reported as a measurement.
+          if doc["measurement"]["kind"] == "ESTIMATE":
+              assert doc["verdict"] != "PASS"
+              assert doc["measurement"]["is_measurement"] is False
+          # No backend means no joule figure, never a zero or a guess.
+          if doc["verdict"] == "UNSUPPORTED":
+              assert doc["measurement"]["joules"] is None
+              assert doc["unreadable"]
+          print("envelope OK: verdict %s, backend %s" % (
+              doc["verdict"], doc["measurement"]["backend"]))
+          PYEOF
+
+  ascii-only:
+    name: ascii only
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Every tracked file must be pure ASCII
+        run: |
+          if LC_ALL=C grep -rn '[^ -~]' --exclude-dir=.git . ; then
+            echo "non-ASCII bytes found above"
+            exit 1
+          fi
+          echo "all tracked files are pure ASCII"
+
+  rapl-linux:
+    name: rapl detection on linux
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install -e .
+      - name: Report the RAPL situation on this runner
+        run: |
+          echo "powercap contents, if any:"
+          ls -l /sys/class/powercap/ 2>&1 || true
+          echo
+          # This step reports and does not assert. A GitHub hosted runner is a
+          # VM without a readable energy_uj, so the expected result is an
+          # honest unavailable with a reason, not a measurement.
+          python -m powerstamp.cli detect || true
+
+  build:
+    name: build the distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: python -m pip install --upgrade pip build twine
+      - run: python -m build
+      - run: python -m twine check dist/*
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  action:
+    name: the action runs on itself
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Use the action from this checkout
+        id: stamp
+        uses: ./
+        with:
+          run: python3 -c "import time; time.sleep(1)"
+          sample-hz: '20'
+          label: 'ci self test'
+          output: action-result.json
+          # A hosted runner has no readable energy interface, so UNSUPPORTED is
+          # the expected verdict here and must not fail the job.
+          fail-on: none
+      - name: Show what the action reported
+        run: |
+          echo "verdict:     ${{ steps.stamp.outputs.verdict }}"
+          echo "kind:        ${{ steps.stamp.outputs.kind }}"
+          echo "backend:     ${{ steps.stamp.outputs.backend }}"
+          echo "joules:      ${{ steps.stamp.outputs.joules }}"
+          echo "achieved Hz: ${{ steps.stamp.outputs.achieved-hz }}"
+          echo "json:        ${{ steps.stamp.outputs.json-path }}"
+          test -f action-result.json

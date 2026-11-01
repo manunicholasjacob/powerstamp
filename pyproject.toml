@@ -1,0 +1,72 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "powerstamp"
+version = "0.1.0"
+description = "Energy measurement that reports its own achieved sampling rate, rail coverage and uncertainty, and refuses a number the measurement cannot support."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Manu Nicholas Jacob" },
+]
+maintainers = [
+    { name = "Manu Nicholas Jacob" },
+]
+keywords = [
+    "energy",
+    "power",
+    "measurement",
+    "uncertainty",
+    "rapl",
+    "nvml",
+    "raspberry-pi",
+    "benchmarking",
+    "reproducibility",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Science/Research",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Topic :: System :: Benchmark",
+    "Topic :: System :: Hardware",
+    "Topic :: Scientific/Engineering",
+]
+dependencies = []
+
+[project.optional-dependencies]
+nvml = ["nvidia-ml-py>=12.535.77"]
+test = ["pytest>=7.0"]
+dev = ["pytest>=7.0", "build>=1.0", "twine>=5.0"]
+
+[project.scripts]
+powerstamp = "powerstamp.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/manunicholasjacob/powerstamp"
+Source = "https://github.com/manunicholasjacob/powerstamp"
+Issues = "https://github.com/manunicholasjacob/powerstamp/issues"
+Changelog = "https://github.com/manunicholasjacob/powerstamp/blob/main/CHANGELOG.md"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src", "tests"]
+addopts = "-ra"

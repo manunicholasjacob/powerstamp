@@ -1,0 +1,30 @@
+cff-version: 1.2.0
+message: "If you use powerstamp in published work, please cite it."
+title: "powerstamp: energy measurement that reports its own uncertainty"
+abstract: >-
+  powerstamp measures the energy consumed by a piece of work and reports the
+  joule figure together with the sampling rate it actually achieved, the power
+  rails and RAPL domains it actually covered, and a quantified measurement
+  uncertainty. It refuses to emit a confident figure when the achieved sampling
+  rate is too low for the duration of the run, and it never presents a model
+  based estimate as a measurement.
+type: software
+version: "0.1.0"
+license: MIT
+repository-code: "https://github.com/manunicholasjacob/powerstamp"
+url: "https://github.com/manunicholasjacob/powerstamp"
+authors:
+  - family-names: "Jacob"
+    given-names: "Manu Nicholas"
+    orcid: "https://orcid.org/0009-0007-6589-6572"
+    affiliation: "Independent Researcher"
+keywords:
+  - energy measurement
+  - power measurement
+  - measurement uncertainty
+  - sampling rate
+  - RAPL
+  - NVML
+  - Raspberry Pi
+  - benchmarking
+  - reproducibility
