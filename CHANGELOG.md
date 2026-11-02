@@ -7,7 +7,7 @@ Keep a Changelog, and the project uses semantic versioning.
 
 Nothing yet.
 
-## [0.1.0] - unreleased, not tagged and not published
+## [0.1.0] - 2026-11-01
 
 First working version. Built, tested and documented; no tag pushed, nothing
 uploaded to PyPI, no GitHub release. See `RELEASE_CHECKLIST.md` for what is

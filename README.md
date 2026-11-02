@@ -1,5 +1,10 @@
 # powerstamp
 
+[![PyPI](https://img.shields.io/pypi/v/powerstamp)](https://pypi.org/project/powerstamp/)
+[![CI](https://github.com/manunicholasjacob/powerstamp/actions/workflows/ci.yml/badge.svg)](https://github.com/manunicholasjacob/powerstamp/actions/workflows/ci.yml)
+[![Python](https://img.shields.io/pypi/pyversions/powerstamp)](https://pypi.org/project/powerstamp/)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+
 Energy measurement that reports its own measurement uncertainty.
 
 `powerstamp` measures the energy consumed by a piece of work and reports the
@@ -13,8 +18,8 @@ error bar. Numbers reported that way are not comparable between papers. The
 first class output of this tool is therefore not the joule figure. It is the
 joule figure with its rate, its rails and its uncertainty attached.
 
-Status: version 0.1.0, not published to PyPI and not tagged. See
-`RELEASE_CHECKLIST.md`.
+Status: version 0.1.0, released on PyPI and tagged `v0.1.0`. No backend has yet
+been validated against real hardware; see Limitations.
 
 ## Why this exists
 
@@ -39,12 +44,15 @@ the rails and the error bar have to travel with the number.
 
 ## Install
 
-Not on PyPI yet. From a checkout:
+```sh
+pip install powerstamp
+pip install "powerstamp[nvml]"   # adds nvidia-ml-py for the NVIDIA backend
+```
+
+Or from a checkout, for development:
 
 ```sh
-pip install -e .
-pip install -e ".[nvml]"   # adds nvidia-ml-py for the NVIDIA backend
-pip install -e ".[test]"   # adds pytest
+pip install -e ".[test]"
 ```
 
 Pure standard library at runtime. The NVIDIA backend is the only optional
